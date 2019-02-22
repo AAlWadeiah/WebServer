@@ -10,6 +10,7 @@ public class WebServerMode {
 	// TODO Implement web server mode
 	private String requestHeaders;
 	private OutputStream clientOut;
+	private String objectPath;
 	
 
 	public WebServerMode(String headers, OutputStream out) {
@@ -30,17 +31,43 @@ public class WebServerMode {
 			return false;
 		}
 		
-		// determine if request is HEAD or GET request
-		// if HEAD request, send header lines only
-		// else, send header lines and specified bytes from file
+		String method = findPattern(getRequestHeaders(), "^(\\w+) \\S+ HTTP/1.1\r\n");
+		File requestedObject = new File(getObjectPath());
+		if (method.equals("HEAD")) {
+			sendOkayResponse(getClientOut(), requestedObject);
+		} else {
+			
+		}
 		
 		return true;
 	}
 	
+	private void sendOkayResponse(OutputStream out, File requestedObject) {
+		String currentDate, lastModified, contentLength, contentType = "";
+		try {
+			currentDate = Utils.getCurrentDate();
+			lastModified = Utils.getLastModified(requestedObject);
+			contentLength = Long.toString(requestedObject.length());
+			contentType = Utils.getContentType(requestedObject);
+			
+			String response = String.format("HTTP/1.1 200 OK\r\nDate: %s\r\nServer: Abe's-Cool-Server\r\nLast-Modified: %s\r\nAccept-Ranges: bytes\r\n" + 
+					"Content-Length: %s\r\nContent-Type: %s\r\nConnection: close\r\n\r\n", currentDate, lastModified, contentLength, contentType);
+			
+			out.write(response.getBytes("US-ASCII"));
+			out.flush();
+		} catch (IOException e) {
+			System.out.println("Error sending OK response: " + e.getMessage());
+			e.printStackTrace();
+			return;
+		}
+		
+	}
+
 	private boolean findObject(String headers) {
-		String objectPath = findPattern(headers, "^\\w+ (\\S+) HTTP/1.1");
+		String objectPath = findPattern(headers, "^\\w+ (\\S+) HTTP/1.1\r\n");
 		File temp = new File(objectPath);
 		if (temp.exists() && temp.isDirectory()) {
+			setObjectPath(objectPath);
 			return true;
 		}
 		return false;
@@ -64,10 +91,10 @@ public class WebServerMode {
 	}
 
 	public void sendErrorResponse(OutputStream os, String type) {
-		String response = String.format("HTTP/1.1 %s\r\nDate: %s\r\nServer: Abe's-Cool-Server\r\nConnection: close", type, Utils.getCurrentDate());
+		String response = String.format("HTTP/1.1 %s\r\nDate: %s\r\nServer: Abe's-Cool-Server\r\nConnection: close\r\n\r\n", type, Utils.getCurrentDate());
 		try {
-			getClientOut().write(response.getBytes());
-			getClientOut().flush();
+			os.write(response.getBytes("US-ASCII"));
+			os.flush();
 		} catch (IOException e) {
 			System.out.println("Error sending " + type + " response: " + e.getMessage());
 			e.printStackTrace();
@@ -116,6 +143,20 @@ public class WebServerMode {
 	 */
 	public void setClientOut(OutputStream clientOut) {
 		this.clientOut = clientOut;
+	}
+
+	/**
+	 * @return the objectPath
+	 */
+	public String getObjectPath() {
+		return objectPath;
+	}
+
+	/**
+	 * @param objectPath the objectPath to set
+	 */
+	public void setObjectPath(String objectPath) {
+		this.objectPath = objectPath;
 	}
 
 }

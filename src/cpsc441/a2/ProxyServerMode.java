@@ -37,7 +37,7 @@ public class ProxyServerMode {
 			Socket remoteSock = new Socket(remoteHost, remotePort);
 			OutputStream remoteOut = remoteSock.getOutputStream();
 			InputStream remoteIn = remoteSock.getInputStream();
-			remoteOut.write(getRequestHeaders().getBytes());
+			remoteOut.write(getRequestHeaders().getBytes("US-ASCII"));
 			remoteOut.flush();
 			
 			byte[] chunk = new byte[2048];

@@ -4,18 +4,19 @@ import java.io.*;
 import java.net.*;
 import java.util.regex.*;
 
-public class WebServerRunnable extends Thread{
+public class ServerRunnable implements Runnable{
 	private Socket sock;
 	private OutputStream out;
 	private InputStream in;
 
-	public WebServerRunnable(Socket s) {
+	public ServerRunnable(Socket s) {
 		sock = s;
 		out = null;
 		in = null;
 	}
 
 	public void run() {
+		System.out.println("Inside runnable");
 		try {
 			in = new DataInputStream(sock.getInputStream());
 			out = new DataOutputStream(sock.getOutputStream());
@@ -35,6 +36,7 @@ public class WebServerRunnable extends Thread{
 		boolean success;
 		try {
 			boolean local = isLocal(rawData);
+			System.out.println("Local check: " + local);
 			if (!local) {
 				// create proxyServerMode
 				System.out.println("Proxy mode");
@@ -65,7 +67,7 @@ public class WebServerRunnable extends Thread{
 	private boolean isLocal(ByteArrayOutputStream rawData) throws UnknownHostException {
 		String rawHeaders = rawData.toString();
 		if (rawHeaders.contains("Host: ")) {
-			String hostName = findPattern(rawHeaders, "Host: (\\S+)\\s\\s");
+			String hostName = findPattern(rawHeaders, "Host: (\\D+):\\d+\\s\\s");
 			if(Utils.isLocalHost(hostName)) {
 				return true;
 			} else {
@@ -91,28 +93,34 @@ public class WebServerRunnable extends Thread{
 		return "";
 	}
 
+	//==============================================================//
+	//<<<<<<<<<<<<<<<<<<<<<<< PROBLEM METHOD >>>>>>>>>>>>>>>>>>>>>>>//
 	/**
 	 * Reads input coming from the InputStream and stores it in a raw format as a ByteArrayOutputStream.
 	 * @param is The InputStream to be read from
 	 * @return the raw data from the InputStream
 	 */
 	private ByteArrayOutputStream readRequest(InputStream is) {
+		System.out.println("Reading request");
 		ByteArrayOutputStream rawData = new ByteArrayOutputStream();
         byte[] chunk = new byte[2048];
         int bytesRead = 0;
 		try {
+			// NEVER BREAKS OUT OF THIS LOOP //
 			while ((bytesRead = is.read(chunk)) > -1) {
 				rawData.write(chunk, 0, bytesRead);
-				chunk = new byte[2048];
-
+				System.out.println("Bytes read: " + bytesRead);
 			}
 		} catch (IOException e) {
 			System.out.println("Error reading client request:" + e.getMessage());
 			e.printStackTrace();
 			return null;
 		}
+		System.out.println("Done reading");
 		return rawData;
 	}
+	//<<<<<<<<<<<<<<<<<<<<<<< PROBLEM METHOD >>>>>>>>>>>>>>>>>>>>>>>//
+	//==============================================================//
 
 	/**
 	 * Shuts down the socket connection

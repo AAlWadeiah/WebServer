@@ -18,7 +18,6 @@ import java.util.concurrent.*;
 public class WebServer extends BasicWebServer {
 
 	private boolean shutdown = false;
-	private ArrayList<WebServerRunnable> serverThreads;
 	private ServerSocket mainSocket;
 	private ExecutorService threadExecutor;
 
@@ -42,20 +41,20 @@ public class WebServer extends BasicWebServer {
 	}
 
 	/**
-	 * Awaits incoming client requests and attempts to accept the requests. Creates a new runnable for every client request and adds it to the thread pool.
+	 * Awaits incoming client requests and attempts to accept the requests.
+	 * Creates a new runnable for every client request and adds it to the thread pool.
 	 */
 	public void run() {
 		Socket client = new Socket();
-		WebServerRunnable wr;
+		ServerRunnable wr;
 
 		while (!shutdown) {
-			Thread.yield();
+//			Thread.yield();
 
 			// try you to accept incoming connection
 			try {
 				client = mainSocket.accept();
-
-				wr = new WebServerRunnable(client);
+				wr = new ServerRunnable(client);
 				threadExecutor.execute(wr);
 
 			} catch (IOException e) {

@@ -31,6 +31,7 @@ public class WebServerMode {
 			return false;
 		}
 		
+		System.out.println("Trying to process request");
 		String method = findPattern(getRequestHeaders(), "^(\\w+) \\S+ HTTP/1.1\r\n");
 		File requestedObject = new File(getObjectPath());
 		if (method.equals("HEAD")) {

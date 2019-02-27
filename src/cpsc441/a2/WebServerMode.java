@@ -1,11 +1,14 @@
 package cpsc441.a2;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.RandomAccess;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,6 +17,9 @@ public class WebServerMode {
 	private String requestHeaders;
 	private OutputStream clientOut;
 	private String objectPath;
+	private boolean isRange = false;
+	private Long offset;
+	private Integer length;
 	
 
 	public WebServerMode(String headers, OutputStream out) {
@@ -37,16 +43,65 @@ public class WebServerMode {
 		String method = findPattern(getRequestHeaders(), "^(\\w+) \\S+ HTTP/1.1\r\n");
 		File requestedObject = new File(getObjectPath());
 		if (method.equals("HEAD")) {
-			sendOkayResponse(getClientOut(), requestedObject);
+			sendHEADResponse(getClientOut(), requestedObject);
 		} else {
-			sendOkayResponse(getClientOut(), requestedObject);
-			System.out.println("Do nothing right now");
+			setRange(getRequestHeaders());
+			sendGETResponse(getClientOut(), requestedObject, offset, length, isRange);
+			sendFileRange(getClientOut(), requestedObject, offset, length);
 		}
 		
 		return true;
 	}
+
+	private void sendFileRange(OutputStream out, File obj, Long pos, Integer len) {
+		try {
+			RandomAccessFile reader = new RandomAccessFile(obj, "r");
+			reader.seek(pos);
+			byte[] temp = new byte[len];
+			reader.read(temp, 0, len);
+			out.write(temp);
+			reader.close();
+		} catch (FileNotFoundException e) {
+			System.out.println("Error reading file: " + e.getMessage());
+			return;
+		} catch (IOException e) {
+			System.out.println("Error closing file: " + e.getMessage());
+			return;
+		}
+		
+	}
 	
-	private void sendOkayResponse(OutputStream out, File requestedObject) {
+	private void sendGETResponse(OutputStream out, File requestedObject, Long off, Integer len, boolean isR) {
+		String response, currentDate, lastModified, contentLength, contentType = "", start, end;
+		
+		try {
+			currentDate = Utils.getCurrentDate();
+			lastModified = Utils.getLastModified(requestedObject);
+			contentLength = Long.toString(requestedObject.length());
+			contentType = Utils.getContentType(requestedObject);
+			start = off.toString();
+			end = len.toString();
+			if (isR) {
+				response = String.format("HTTP/1.1 200 OK\r\nDate: %s\r\nServer: Abe's-Cool-Server\r\nLast-Modified: %s\r\n" +
+						"Accept-Ranges: bytes\r\nContent-Length: %s\r\nContent-Type: %s\r\nContent-Ranges: bytes %s-%s/%s" + 
+						"Connection: close\r\n\r\n",
+						currentDate, lastModified, contentLength, contentType, start, end, contentLength);
+			} else {
+				response = String.format("HTTP/1.1 200 OK\r\nDate: %s\r\nServer: Abe's-Cool-Server\r\nLast-Modified: %s\r\nAccept-Ranges: bytes\r\n" + 
+						"Content-Length: %s\r\nContent-Type: %s\r\nConnection: close\r\n\r\n", currentDate, lastModified, contentLength, contentType);
+			}
+			
+			
+			out.write(response.getBytes("US-ASCII"));
+			out.flush();
+		} catch (IOException e) {
+			System.out.println("Error sending OK response: " + e.getMessage());
+			e.printStackTrace();
+			return;
+		}
+	}
+
+	private void sendHEADResponse(OutputStream out, File requestedObject) {
 		String currentDate, lastModified, contentLength, contentType = "";
 		try {
 			currentDate = Utils.getCurrentDate();
@@ -65,6 +120,16 @@ public class WebServerMode {
 			return;
 		}
 		
+	}
+	
+	private void setRange(String headers) {
+		String range = findPattern(headers, "Range: bytes=(\\d+-\\d+)");
+		if (!range.equals("")) {
+			this.isRange = true;
+			String[] r = range.split("-");
+			this.offset = Long.valueOf(r[0]);
+			this.length = Integer.valueOf(r[1]);
+		} 
 	}
 
 	private boolean findObject(String headers) {

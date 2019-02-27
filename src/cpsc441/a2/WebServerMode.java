@@ -3,6 +3,9 @@ package cpsc441.a2;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,13 +34,13 @@ public class WebServerMode {
 			return false;
 		}
 		
-		System.out.println("Trying to process request");
 		String method = findPattern(getRequestHeaders(), "^(\\w+) \\S+ HTTP/1.1\r\n");
 		File requestedObject = new File(getObjectPath());
 		if (method.equals("HEAD")) {
 			sendOkayResponse(getClientOut(), requestedObject);
 		} else {
-			
+			sendOkayResponse(getClientOut(), requestedObject);
+			System.out.println("Do nothing right now");
 		}
 		
 		return true;
@@ -65,9 +68,9 @@ public class WebServerMode {
 	}
 
 	private boolean findObject(String headers) {
-		String objectPath = findPattern(headers, "^\\w+ (\\S+) HTTP/1.1\r\n");
-		File temp = new File(objectPath);
-		if (temp.exists() && temp.isDirectory()) {
+		String objectPath = findPattern(headers, "^\\w+ /(\\S+) HTTP/1.1\r\n");
+		Path path = Paths.get(objectPath);
+		if (Files.isRegularFile(path)) {
 			setObjectPath(objectPath);
 			return true;
 		}
@@ -83,8 +86,8 @@ public class WebServerMode {
 			return false;
 		
 		String[] splitHeaders = headers.split("\r\n");
-		for (int i = 1; i < splitHeaders.length; i++) {
-			boolean match = splitHeaders[i].matches("\\w+-?\\w*: \\S+\r\n");
+		for (int i = 1; i < splitHeaders.length-1; i++) {
+			boolean match = splitHeaders[i].matches("\\w+-?\\w*: \\S+");
 			if (!match)
 				return false;
 		}

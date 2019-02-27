@@ -16,7 +16,6 @@ public class ServerRunnable implements Runnable{
 	}
 
 	public void run() {
-		System.out.println("Inside runnable");
 		try {
 			in = new DataInputStream(sock.getInputStream());
 			out = new DataOutputStream(sock.getOutputStream());
@@ -31,53 +30,48 @@ public class ServerRunnable implements Runnable{
 			close();
 			return;
 		}
-		
+
 		ByteArrayOutputStream rawData = readRequest(in);
 		boolean success;
-		try {
-			boolean local = isLocal(rawData);
-			System.out.println("Local check: " + local);
-			if (!local) {
-				// create proxyServerMode
-				System.out.println("Proxy mode");
-				ProxyServerMode proxyRequest = new ProxyServerMode(rawData.toString(), out);
-				success = proxyRequest.processRequest();
-			} else {
-				System.out.println("Web server mode");
-				// create WebServerMode
-				WebServerMode webRequest = new WebServerMode(rawData.toString(), out);
-				success = webRequest.processRequest();
-			}
-		} catch (UnknownHostException e) {
-			System.out.println("Host name error: " + e.getMessage());
-			e.printStackTrace();
-			close();
-			return;
-		}
-		
-		if (success) {
-			System.out.println("Successfully processed client request.");
+		boolean local = isLocal(rawData);
+		if (!local) {
+			// create proxyServerMode
+			ProxyServerMode proxyRequest = new ProxyServerMode(rawData.toString(), out);
+			success = proxyRequest.processRequest();
 		} else {
-			System.out.println("Failed to process client request.");
+			// create WebServerMode
+			WebServerMode webRequest = new WebServerMode(rawData.toString(), out);
+			success = webRequest.processRequest();
 		}
-		
+
+		if (success) {
+			System.out.println("Successfully processed client request.\n");
+		} else {
+			System.out.println("Failed to process client request.\n");
+		}
+
 		close();
 	}
-	
-	private boolean isLocal(ByteArrayOutputStream rawData) throws UnknownHostException {
+
+	private boolean isLocal(ByteArrayOutputStream rawData){
 		String rawHeaders = rawData.toString();
 		if (rawHeaders.contains("Host: ")) {
-			String hostName = findPattern(rawHeaders, "Host: (\\D+):\\d+\\s\\s");
-			if(Utils.isLocalHost(hostName)) {
-				return true;
-			} else {
-				return false;
+			String hostName = findPattern(rawHeaders, "Host: (\\S+):?");
+			try {
+				if(Utils.isLocalHost(hostName)) {
+					return true;
+				} else {
+					return false;
+				}
+			} catch (UnknownHostException e) {
+				System.out.println("Non-local host");
 			}
 		} else {
 			return true;
 		}
+		return false;
 	}
-	
+
 	/**
 	 * General method for searching a string for a specified pattern.
 	 * @param rawString The raw string to be searched
@@ -93,34 +87,30 @@ public class ServerRunnable implements Runnable{
 		return "";
 	}
 
-	//==============================================================//
-	//<<<<<<<<<<<<<<<<<<<<<<< PROBLEM METHOD >>>>>>>>>>>>>>>>>>>>>>>//
 	/**
 	 * Reads input coming from the InputStream and stores it in a raw format as a ByteArrayOutputStream.
 	 * @param is The InputStream to be read from
 	 * @return the raw data from the InputStream
 	 */
 	private ByteArrayOutputStream readRequest(InputStream is) {
-		System.out.println("Reading request");
 		ByteArrayOutputStream rawData = new ByteArrayOutputStream();
-        byte[] chunk = new byte[2048];
-        int bytesRead = 0;
+		byte[] chunk = new byte[2048];
+		int bytesRead = 0;
 		try {
-			// NEVER BREAKS OUT OF THIS LOOP //
 			while ((bytesRead = is.read(chunk)) > -1) {
 				rawData.write(chunk, 0, bytesRead);
-				System.out.println("Bytes read: " + bytesRead);
+				String temp = rawData.toString();
+				if (temp.contains("\r\n\r\n"))
+					break;
+
 			}
 		} catch (IOException e) {
 			System.out.println("Error reading client request:" + e.getMessage());
 			e.printStackTrace();
 			return null;
 		}
-		System.out.println("Done reading");
 		return rawData;
 	}
-	//<<<<<<<<<<<<<<<<<<<<<<< PROBLEM METHOD >>>>>>>>>>>>>>>>>>>>>>>//
-	//==============================================================//
 
 	/**
 	 * Shuts down the socket connection

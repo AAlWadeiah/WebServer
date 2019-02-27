@@ -17,7 +17,7 @@ public class ProxyServerMode {
 
 	public boolean processRequest() {
 		// Get non-local host name
-		String remoteHost = findPattern(getRequestHeaders(), "Host: (\\w+)");
+		String remoteHost = findPattern(getRequestHeaders(), "Host: ([\\w\\-\\.]+)");
 		
 		// Set the port number
 		Integer remotePort;
@@ -61,7 +61,7 @@ public class ProxyServerMode {
 	
 	private String setToNonPersistent(String oldHeaders) {
 		String newHeaders = "";
-		if (oldHeaders.contains("Connection: ")) {
+		if (oldHeaders.contains("Connection:")) {
 			newHeaders = oldHeaders.replaceFirst("Connection: \\S+\r\n", "Connection: close\r\n");
 		} else {
 			newHeaders = oldHeaders.trim();

@@ -10,11 +10,20 @@ public class ProxyServerMode {
 	private String requestHeaders;
 	private OutputStream clientOut;
 
+	/**
+	 * Allows base ServerRunnable to behave like a proxy server.
+	 * @param headers The client request headers.
+	 * @param out The client socket's output stream 
+	 */
 	public ProxyServerMode(String headers, OutputStream out) {
 		setRequestHeaders(headers);
 		setServerOut(out);
 	}
 
+	/**
+	 * Processes the client proxy request. Opens connection to remote host, sends client request to remote host, and sends response to client.
+	 * @return true if the request was processed successfully, and false otherwise.
+	 */
 	public boolean processRequest() {
 		// Get non-local host name
 		String remoteHost = findPattern(getRequestHeaders(), "Host: ([\\w\\-\\.]+)");
@@ -59,6 +68,11 @@ public class ProxyServerMode {
 		return true;
 	}
 	
+	/**
+	 * Inserts Connection: close header if it is not already present in oldHeaders. If Connection header is present, it will set it to close.
+	 * @param oldHeaders
+	 * @return newHeaders containing the Connection: close header
+	 */
 	private String setToNonPersistent(String oldHeaders) {
 		String newHeaders = "";
 		if (oldHeaders.contains("Connection:")) {

@@ -22,11 +22,20 @@ public class WebServerMode {
 	private Integer length;
 	
 
+	/**
+	 * Allows base ServerRunnable to behave like web server.
+	 * @param headers The client request headers.
+	 * @param out The client socket's output stream.
+	 */
 	public WebServerMode(String headers, OutputStream out) {
 		setClientOut(out);
 		setRequestHeaders(headers);
 	}
 
+	/**
+	 * Processes the client's request to the local server.
+	 * @return true if the request was processed successfully, and false otherwise.
+	 */
 	public boolean processRequest() {
 		boolean isValidRequest = validateRequest(getRequestHeaders());
 		if (!isValidRequest) {
@@ -53,6 +62,14 @@ public class WebServerMode {
 		return true;
 	}
 
+	/**
+	 * Sends the requested bytes of the file to the client.
+	 * @param out The client's output stream.
+	 * @param obj The file of the requested object.
+	 * @param pos The position to start reading from in the file.
+	 * @param len The number of bytes to read from the file.
+	 * @param isR Boolean indicating if the request is a Range request.
+	 */
 	private void sendFileRange(OutputStream out, File obj, Long pos, Integer len, boolean isR) {
 		if (!isR) {
 			pos = (long) 0;
@@ -75,6 +92,14 @@ public class WebServerMode {
 		
 	}
 	
+	/**
+	 * Sends a response to a GET request.
+	 * @param out The output stream to send the response to.
+	 * @param requestedObject The file of the requested object.
+	 * @param off The starting position of reading the file.
+	 * @param len The number of bytes to be read from the file.
+	 * @param isR Boolean indicating if the request is a Range request.
+	 */
 	private void sendGETResponse(OutputStream out, File requestedObject, Long off, Integer len, boolean isR) {
 		String response, currentDate, lastModified, contentLength, contentType = "", start, end;
 		
@@ -105,6 +130,11 @@ public class WebServerMode {
 		}
 	}
 
+	/**
+	 * Sends a response to a HEAD request.
+	 * @param out The output stream to send the response to.
+	 * @param requestedObject The file of the requested object.
+	 */
 	private void sendHEADResponse(OutputStream out, File requestedObject) {
 		String currentDate, lastModified, contentLength, contentType = "";
 		try {
@@ -126,6 +156,10 @@ public class WebServerMode {
 		
 	}
 	
+	/**
+	 * Looks for the Range header. If Range header is found, it is parsed to set the offset and length for reading from the file.
+	 * @param headers The request headers.
+	 */
 	private void setRange(String headers) {
 		String range = findPattern(headers, "Range: bytes=(\\d+-\\d+)");
 		if (!range.equals("")) {
@@ -136,6 +170,11 @@ public class WebServerMode {
 		}
 	}
 
+	/**
+	 * Attempts to find the requested object in the server's working directory. If the file is found, the path is set.
+	 * @param headers The request headers.
+	 * @return true if the object was found, and false otherwise
+	 */
 	private boolean findObject(String headers) {
 		String objectPath = findPattern(headers, "^\\w+ /(\\S+) HTTP/1.1\r\n");
 		Path path = Paths.get(objectPath);
@@ -146,6 +185,11 @@ public class WebServerMode {
 		return false;
 	}
 
+	/**
+	 * Checks if headers are well-formed.
+	 * @param headers The request headers.
+	 * @return true if headers have correct form and if method is GET or HEAD. False otherwise.
+	 */
 	private boolean validateRequest(String headers) {
 		String requestLine = findPattern(headers, "^(\\w+) /\\S+ HTTP/1.1\r\n");
 		if (requestLine.equals(""))
@@ -163,6 +207,11 @@ public class WebServerMode {
 		return true;
 	}
 
+	/**
+	 * Sends an HTTP error response.
+	 * @param os The output stream to send error response to.
+	 * @param type The specific type of error; either, "400 Bad Request" or "404 Not Found".
+	 */
 	public void sendErrorResponse(OutputStream os, String type) {
 		String response = String.format("HTTP/1.1 %s\r\nDate: %s\r\nServer: Abe's-Cool-Server\r\nConnection: close\r\n\r\n", type, Utils.getCurrentDate());
 		try {

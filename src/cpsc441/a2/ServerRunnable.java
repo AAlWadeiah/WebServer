@@ -15,6 +15,7 @@ public class ServerRunnable implements Runnable{
 		in = null;
 	}
 
+	@Override
 	public void run() {
 		try {
 			in = new DataInputStream(sock.getInputStream());
@@ -53,6 +54,11 @@ public class ServerRunnable implements Runnable{
 		close();
 	}
 
+	/**
+	 * Checks if request is for the local server. 
+	 * @param rawData
+	 * @return true if no Host header is found or if Host header is found and the host name is local; false otherwise.
+	 */
 	private boolean isLocal(ByteArrayOutputStream rawData){
 		String rawHeaders = rawData.toString();
 		if (rawHeaders.contains("Host: ")) {

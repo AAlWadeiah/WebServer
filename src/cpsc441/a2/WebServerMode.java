@@ -47,13 +47,17 @@ public class WebServerMode {
 		} else {
 			setRange(getRequestHeaders());
 			sendGETResponse(getClientOut(), requestedObject, offset, length, isRange);
-			sendFileRange(getClientOut(), requestedObject, offset, length);
+			sendFileRange(getClientOut(), requestedObject, offset, length, isRange);
 		}
 		
 		return true;
 	}
 
-	private void sendFileRange(OutputStream out, File obj, Long pos, Integer len) {
+	private void sendFileRange(OutputStream out, File obj, Long pos, Integer len, boolean isR) {
+		if (!isR) {
+			pos = (long) 0;
+			len = (int) obj.length();
+		}
 		try {
 			RandomAccessFile reader = new RandomAccessFile(obj, "r");
 			reader.seek(pos);
@@ -79,18 +83,18 @@ public class WebServerMode {
 			lastModified = Utils.getLastModified(requestedObject);
 			contentLength = Long.toString(requestedObject.length());
 			contentType = Utils.getContentType(requestedObject);
-			start = off.toString();
-			end = len.toString();
+			
 			if (isR) {
+				start = off.toString();
+				end = len.toString();
 				response = String.format("HTTP/1.1 200 OK\r\nDate: %s\r\nServer: Abe's-Cool-Server\r\nLast-Modified: %s\r\n" +
-						"Accept-Ranges: bytes\r\nContent-Length: %s\r\nContent-Type: %s\r\nContent-Ranges: bytes %s-%s/%s" + 
+						"Accept-Ranges: bytes\r\nContent-Length: %s\r\nContent-Type: %s\r\nContent-Ranges: bytes %s-%s/%s\r\n" + 
 						"Connection: close\r\n\r\n",
 						currentDate, lastModified, contentLength, contentType, start, end, contentLength);
 			} else {
 				response = String.format("HTTP/1.1 200 OK\r\nDate: %s\r\nServer: Abe's-Cool-Server\r\nLast-Modified: %s\r\nAccept-Ranges: bytes\r\n" + 
 						"Content-Length: %s\r\nContent-Type: %s\r\nConnection: close\r\n\r\n", currentDate, lastModified, contentLength, contentType);
 			}
-			
 			
 			out.write(response.getBytes("US-ASCII"));
 			out.flush();
@@ -129,7 +133,7 @@ public class WebServerMode {
 			String[] r = range.split("-");
 			this.offset = Long.valueOf(r[0]);
 			this.length = Integer.valueOf(r[1]);
-		} 
+		}
 	}
 
 	private boolean findObject(String headers) {

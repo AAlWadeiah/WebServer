@@ -11,7 +11,7 @@ import java.nio.file.Paths;
 
 public class WebServerMode extends BasicServerMode{
 
-	private String objectPath;
+	private File requestedObject;
 	private boolean isRange = false;
 	private Long offset;
 	private Integer length;
@@ -35,13 +35,11 @@ public class WebServerMode extends BasicServerMode{
 		}
 		
 		String method = findPattern(getRequestHeaders(), "^(\\w+) \\S+ HTTP/1.1\r\n");
-		File requestedObject = new File(getObjectPath());
 		if (method.equals("HEAD")) {
-			sendHEADResponse(getClientOut(), requestedObject);
+			sendHEADResponse(getClientOut(), getRequestedObject());
 		} else {
-			setRange(getRequestHeaders());
-			sendGETResponse(getClientOut(), requestedObject, offset, length, isRange);
-			sendFileRange(getClientOut(), requestedObject, offset, length, isRange);
+			sendGETResponse(getClientOut(), getRequestedObject(), getOffset(), getLength(), getIsRange());
+			sendFileRange(getClientOut(), getRequestedObject(), getOffset(), getLength(), getIsRange());
 		}
 		
 		return true;
@@ -55,8 +53,8 @@ public class WebServerMode extends BasicServerMode{
 	 * @param len The number of bytes to read from the file.
 	 * @param isR Boolean indicating if the request is a Range request.
 	 */
-	private void sendFileRange(OutputStream out, File obj, Long pos, Integer len, boolean isR) {
-		if (!isR) {
+	private void sendFileRange(OutputStream out, File obj, Long pos, Integer len, boolean isRange) {
+		if (!isRange) {
 			pos = (long) 0;
 			len = (int) obj.length();
 		}
@@ -145,18 +143,23 @@ public class WebServerMode extends BasicServerMode{
 	 * Looks for the Range header. If Range header is found, it is parsed to set the offset and length for reading from the file.
 	 * @param headers The request headers.
 	 */
-	private void setRange(String headers) {
+	private boolean checkRange(String headers) {
 		String range = findPattern(headers, "Range: bytes=(\\d+-\\d+)");
-		if (!range.equals("")) {
-			this.isRange = true;
+		if (range.equals("")) {
+			return false;
+		} else {
 			String[] r = range.split("-");
-			this.offset = Long.valueOf(r[0]);
-			this.length = Integer.valueOf(r[1]);
+			setOffset(Long.valueOf(r[0]));
+			setLength(Integer.valueOf(r[1]));
+			setIsRange(true);
+			if ((getOffset() > getLength()) || (getOffset() < 0) || (getLength() < 0))
+				return false;
+			return true;
 		}
 	}
 
 	/**
-	 * Attempts to find the requested object in the server's working directory. If the file is found, the path is set.
+	 * Attempts to find the requested object in the server's working directory. If the file is found, the file is created and set.
 	 * @param headers The request headers.
 	 * @return true if the object was found, and false otherwise
 	 */
@@ -164,7 +167,7 @@ public class WebServerMode extends BasicServerMode{
 		String objectPath = findPattern(headers, "^\\w+ /(\\S+) HTTP/1.1\r\n");
 		Path path = Paths.get(objectPath);
 		if (Files.isRegularFile(path)) {
-			setObjectPath(objectPath);
+			setRequestedObject(new File(objectPath));
 			return true;
 		}
 		return false;
@@ -184,26 +187,74 @@ public class WebServerMode extends BasicServerMode{
 			return false;
 		
 		String[] splitHeaders = headers.split("\r\n");
-		for (int i = 1; i < splitHeaders.length-1; i++) {
+		for (int i = 1; i < splitHeaders.length; i++) {
 			boolean match = splitHeaders[i].matches("\\w+-?\\w*: \\S+");
 			if (!match)
 				return false;
 		}
+		
+		if (headers.contains("\r\nRange:")) {
+			boolean goodRange = checkRange(headers);
+			if (!goodRange) 
+				return false;
+		}
 		return true;
 	}
-
+	
 	/**
-	 * @return the objectPath
+	 * @return the length
 	 */
-	public String getObjectPath() {
-		return objectPath;
+	public Integer getLength() {
+		return length;
+	}
+	
+	/**
+	 * @param length the length to set
+	 */
+	public void setLength(Integer length) {
+		this.length = length;
+	}
+	
+	/**
+	 * @return the offset
+	 */
+	public Long getOffset() {
+		return offset;
+	}
+	
+	/**
+	 * @param offset the offset to set
+	 */
+	public void setOffset(Long offset) {
+		this.offset = offset;
+	}
+	
+	/**
+	 * @return the isRange
+	 */
+	public boolean getIsRange() {
+		return isRange;
+	}
+	
+	/**
+	 * @param isRange the isRange to set
+	 */
+	public void setIsRange(boolean isRange) {
+		this.isRange = isRange;
 	}
 
 	/**
-	 * @param objectPath the objectPath to set
+	 * @return the requestedObject
 	 */
-	public void setObjectPath(String objectPath) {
-		this.objectPath = objectPath;
+	public File getRequestedObject() {
+		return requestedObject;
+	}
+
+	/**
+	 * @param requestedObject the requestedObject to set
+	 */
+	public void setRequestedObject(File requestedObject) {
+		this.requestedObject = requestedObject;
 	}
 
 }

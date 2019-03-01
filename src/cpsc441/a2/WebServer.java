@@ -49,8 +49,6 @@ public class WebServer extends BasicWebServer {
 		ServerRunnable wr;
 
 		while (!shutdown) {
-//			Thread.yield();
-
 			// try you to accept incoming connection
 			try {
 				client = mainSocket.accept();

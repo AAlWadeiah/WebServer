@@ -6,14 +6,19 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public abstract class BasicServerMode {
+	private String requestHeaders;
+	private OutputStream clientOut;
+	
+	public BasicServerMode(OutputStream out, String headers) {
+		setClientOut(out);
+		setRequestHeaders(headers);
+	}
 	
 	/**
 	 * Processes the client request.
 	 * @return true if the request was processed successfully, and false otherwise.
 	 */
 	public abstract boolean processRequest();
-	
-	public abstract boolean validateRequest(String headers);
 	
 	/**
 	 * Sends an HTTP error response.
@@ -45,5 +50,33 @@ public abstract class BasicServerMode {
 			return mat.group(1);
 		}
 		return "";
+	}
+
+	/**
+	 * @return the clientOut
+	 */
+	public OutputStream getClientOut() {
+		return clientOut;
+	}
+
+	/**
+	 * @param clientOut the clientOut to set
+	 */
+	public void setClientOut(OutputStream clientOut) {
+		this.clientOut = clientOut;
+	}
+
+	/**
+	 * @return the requestHeaders
+	 */
+	public String getRequestHeaders() {
+		return requestHeaders;
+	}
+
+	/**
+	 * @param requestHeaders the requestHeaders to set
+	 */
+	public void setRequestHeaders(String requestHeaders) {
+		this.requestHeaders = requestHeaders;
 	}
 }

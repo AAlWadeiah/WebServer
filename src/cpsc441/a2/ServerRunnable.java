@@ -37,11 +37,11 @@ public class ServerRunnable implements Runnable{
 		boolean local = isLocal(rawData);
 		if (!local) {
 			// create proxyServerMode
-			ProxyServerMode proxyRequest = new ProxyServerMode(rawData.toString(), out);
+			ProxyServerMode proxyRequest = new ProxyServerMode(out, rawData.toString());
 			success = proxyRequest.processRequest();
 		} else {
 			// create WebServerMode
-			WebServerMode webRequest = new WebServerMode(rawData.toString(), out);
+			WebServerMode webRequest = new WebServerMode(out, rawData.toString());
 			success = webRequest.processRequest();
 		}
 

@@ -3,22 +3,11 @@ package cpsc441.a2;
 import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class ProxyServerMode extends BasicServerMode{
-	private String requestHeaders;
-	private OutputStream clientOut;
 
-	/**
-	 * Allows base ServerRunnable to behave like a proxy server.
-	 * @param headers The client request headers.
-	 * @param out The client socket's output stream 
-	 */
-	public ProxyServerMode(String headers, OutputStream out) {
-		setRequestHeaders(headers);
-		setClientOut(out);
+	public ProxyServerMode(OutputStream out, String headers) {
+		super(out, headers);
 	}
 
 	@Override
@@ -98,40 +87,6 @@ public class ProxyServerMode extends BasicServerMode{
 				return true;
 			}
 		}
-		return false;
-	}
-	
-	/**
-	 * @return the requestHeaders
-	 */
-	public String getRequestHeaders() {
-		return requestHeaders;
-	}
-
-	/**
-	 * @param requestHeaders the requestHeaders to set
-	 */
-	public void setRequestHeaders(String requestHeaders) {
-		this.requestHeaders = requestHeaders;
-	}
-
-	/**
-	 * @return the serverOut
-	 */
-	public OutputStream getClientOut() {
-		return clientOut;
-	}
-
-	/**
-	 * @param serverOut the serverOut to set
-	 */
-	public void setClientOut(OutputStream out) {
-		this.clientOut = out;
-	}
-
-	@Override
-	public boolean validateRequest(String headers) {
-		// TODO Auto-generated method stub
 		return false;
 	}
 }

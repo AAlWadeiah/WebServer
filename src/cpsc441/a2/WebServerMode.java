@@ -8,28 +8,16 @@ import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.RandomAccess;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class WebServerMode extends BasicServerMode{
-	// TODO Implement web server mode
-	private String requestHeaders;
-	private OutputStream clientOut;
+
 	private String objectPath;
 	private boolean isRange = false;
 	private Long offset;
 	private Integer length;
 	
-
-	/**
-	 * Allows base ServerRunnable to behave like web server.
-	 * @param headers The client request headers.
-	 * @param out The client socket's output stream.
-	 */
-	public WebServerMode(String headers, OutputStream out) {
-		setClientOut(out);
-		setRequestHeaders(headers);
+	public WebServerMode(OutputStream out, String headers) {
+		super(out, headers);
 	}
 
 	@Override
@@ -183,11 +171,10 @@ public class WebServerMode extends BasicServerMode{
 	}
 
 	/**
-	 * Checks if headers are well-formed.
+	 * Checks if headers request headers are well-formed.
 	 * @param headers The request headers.
 	 * @return true if headers have correct form and if method is GET or HEAD. False otherwise.
 	 */
-	@Override
 	public boolean validateRequest(String headers) {
 		String requestLine = findPattern(headers, "^(\\w+) /\\S+ HTTP/1.[10]\r\n");
 		if (requestLine.equals(""))
@@ -203,34 +190,6 @@ public class WebServerMode extends BasicServerMode{
 				return false;
 		}
 		return true;
-	}
-
-	/**
-	 * @return the requestHeaders
-	 */
-	public String getRequestHeaders() {
-		return requestHeaders;
-	}
-
-	/**
-	 * @param requestHeaders the requestHeaders to set
-	 */
-	public void setRequestHeaders(String requestHeaders) {
-		this.requestHeaders = requestHeaders;
-	}
-
-	/**
-	 * @return the clientOut
-	 */
-	public OutputStream getClientOut() {
-		return clientOut;
-	}
-
-	/**
-	 * @param clientOut the clientOut to set
-	 */
-	public void setClientOut(OutputStream clientOut) {
-		this.clientOut = clientOut;
 	}
 
 	/**

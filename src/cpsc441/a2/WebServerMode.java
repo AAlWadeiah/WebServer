@@ -12,7 +12,7 @@ import java.util.RandomAccess;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class WebServerMode {
+public class WebServerMode extends BasicServerMode{
 	// TODO Implement web server mode
 	private String requestHeaders;
 	private OutputStream clientOut;
@@ -32,10 +32,7 @@ public class WebServerMode {
 		setRequestHeaders(headers);
 	}
 
-	/**
-	 * Processes the client's request to the local server.
-	 * @return true if the request was processed successfully, and false otherwise.
-	 */
+	@Override
 	public boolean processRequest() {
 		boolean isValidRequest = validateRequest(getRequestHeaders());
 		if (!isValidRequest) {
@@ -190,8 +187,9 @@ public class WebServerMode {
 	 * @param headers The request headers.
 	 * @return true if headers have correct form and if method is GET or HEAD. False otherwise.
 	 */
-	private boolean validateRequest(String headers) {
-		String requestLine = findPattern(headers, "^(\\w+) /\\S+ HTTP/1.1\r\n");
+	@Override
+	public boolean validateRequest(String headers) {
+		String requestLine = findPattern(headers, "^(\\w+) /\\S+ HTTP/1.[10]\r\n");
 		if (requestLine.equals(""))
 			return false;
 		
@@ -205,38 +203,6 @@ public class WebServerMode {
 				return false;
 		}
 		return true;
-	}
-
-	/**
-	 * Sends an HTTP error response.
-	 * @param os The output stream to send error response to.
-	 * @param type The specific type of error; either, "400 Bad Request" or "404 Not Found".
-	 */
-	public void sendErrorResponse(OutputStream os, String type) {
-		String response = String.format("HTTP/1.1 %s\r\nDate: %s\r\nServer: Abe's-Cool-Server\r\nConnection: close\r\n\r\n", type, Utils.getCurrentDate());
-		try {
-			os.write(response.getBytes("US-ASCII"));
-			os.flush();
-		} catch (IOException e) {
-			System.out.println("Error sending " + type + " response: " + e.getMessage());
-			e.printStackTrace();
-			return;
-		}
-	}
-	
-	/**
-	 * General method for searching a string for a specified pattern.
-	 * @param rawString The raw string to be searched
-	 * @param pattern The specified regular expression. Must contain exactly one group.
-	 * @return first instance of pattern. Empty string otherwise
-	 */
-	private String findPattern(String rawString, String pattern) {
-		Pattern pat = Pattern.compile(pattern);
-		Matcher mat = pat.matcher(rawString);
-		if (mat.find()) {
-			return mat.group(1);
-		}
-		return "";
 	}
 
 	/**

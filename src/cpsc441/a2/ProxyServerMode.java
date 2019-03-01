@@ -2,11 +2,12 @@ package cpsc441.a2;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class ProxyServerMode {
+public class ProxyServerMode extends BasicServerMode{
 	private String requestHeaders;
 	private OutputStream clientOut;
 
@@ -17,13 +18,10 @@ public class ProxyServerMode {
 	 */
 	public ProxyServerMode(String headers, OutputStream out) {
 		setRequestHeaders(headers);
-		setServerOut(out);
+		setClientOut(out);
 	}
 
-	/**
-	 * Processes the client proxy request. Opens connection to remote host, sends client request to remote host, and sends response to client.
-	 * @return true if the request was processed successfully, and false otherwise.
-	 */
+	@Override
 	public boolean processRequest() {
 		// Get non-local host name
 		String remoteHost = findPattern(getRequestHeaders(), "Host: ([\\w\\-\\.]+)");
@@ -52,7 +50,7 @@ public class ProxyServerMode {
 			byte[] chunk = new byte[2048];
 			int bytesRead;
 			while ((bytesRead = remoteIn.read(chunk)) > 0) {
-				getServerOut().write(chunk, 0, bytesRead);
+				getClientOut().write(chunk, 0, bytesRead);
 			}
 			
 			// Close remote connection
@@ -60,6 +58,9 @@ public class ProxyServerMode {
 			remoteIn.close();
 			remoteSock.close();
 			
+		} catch (UnknownHostException e) {
+			sendErrorResponse(getClientOut(), "400 Bad Request");
+			return false;
 		} catch (IOException e) {
 			System.out.println("Error processing client proxy request: " + e.getMessage());
 			e.printStackTrace();
@@ -99,22 +100,7 @@ public class ProxyServerMode {
 		}
 		return false;
 	}
-
-	/**
-	 * General method for searching a string for a specified pattern.
-	 * @param rawString The raw string to be searched
-	 * @param pattern The specified regular expression. Must contain exactly one group.
-	 * @return first instance of pattern. Empty string otherwise
-	 */
-	private String findPattern(String rawString, String pattern) {
-		Pattern pat = Pattern.compile(pattern);
-		Matcher mat = pat.matcher(rawString);
-		if (mat.find()) {
-			return mat.group(1);
-		}
-		return "";
-	}
-
+	
 	/**
 	 * @return the requestHeaders
 	 */
@@ -132,17 +118,20 @@ public class ProxyServerMode {
 	/**
 	 * @return the serverOut
 	 */
-	public OutputStream getServerOut() {
+	public OutputStream getClientOut() {
 		return clientOut;
 	}
 
 	/**
 	 * @param serverOut the serverOut to set
 	 */
-	public void setServerOut(OutputStream out) {
+	public void setClientOut(OutputStream out) {
 		this.clientOut = out;
 	}
-	
-	
 
+	@Override
+	public boolean validateRequest(String headers) {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }

@@ -1,3 +1,14 @@
+/** 
+ * Course: CPSC 441 - Computer Networks
+ * Semester: Winter 2019
+ * Instructor: Majid Ghaderi
+ * Assignment: 2
+ * 
+ * WebServerMode class
+ * 
+ * @author Abdullah Al-Wadeiah
+ */
+
 package cpsc441.a2;
 
 import java.io.File;
